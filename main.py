@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request
+from flask import Flask,render_template,request,abort
 from random import randint
 import redis
 
@@ -41,6 +41,12 @@ def makeCoupon(signature, offset):
 @app.route('/')
 @app.route('/<int:count>')
 def index(count=1):
+    visitor_ip = request.remote_addr
+    if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 1000:
+        abort(503)
+
+    if r.get(visitor_ip) and int(r.get(visitor_ip)) > 50:
+        abort(403)
 
     ten_percent_off_coupons = []
     fifteen_off_50_coupons = []
