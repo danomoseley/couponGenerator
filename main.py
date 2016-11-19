@@ -1,8 +1,26 @@
 from flask import Flask,render_template,request
 from random import randint
+import redis
 
 app = Flask(__name__)
 app.debug = True
+
+def trackUsage(coupon):
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    if not r.get('total_coupons_generated'):
+        r.set('total_coupons_generated', 1)
+    else:
+        r.incr('total_coupons_generated')
+
+    visitor_ip = request.remote_addr
+    if not r.get(visitor_ip):
+        r.set(visitor_ip,1)
+    else:
+        r.incr(visitor_ip)
+
+    print visitor_ip
+    print r.get(visitor_ip)
+    print r.get('total_coupons_generated')
 
 def makeCoupon(signature, offset):
     seed = randint(0,49999)
@@ -20,11 +38,14 @@ def makeCoupon(signature, offset):
             checksum -= digit%10
 
     checksum = checksum % 10
-    return "%05d%05d%04d%01d" % (47000,seed,signature,checksum)
+    coupon = "%05d%05d%04d%01d" % (47000,seed,signature,checksum)
+    trackUsage(coupon)
+    return coupon
 
 @app.route('/')
 @app.route('/<int:count>')
 def index(count=1):
+
     ten_percent_off_coupons = []
     fifteen_off_50_coupons = []
     fifty_off_250_coupons = []
