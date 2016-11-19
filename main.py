@@ -3,10 +3,10 @@ from random import randint
 import redis
 
 app = Flask(__name__)
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
 
 def trackUsage(coupon):
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
     if not r.get('total_coupons_generated'):
         r.set('total_coupons_generated', 1)
     else:
@@ -17,10 +17,6 @@ def trackUsage(coupon):
         r.set(visitor_ip,1)
     else:
         r.incr(visitor_ip)
-
-    print visitor_ip
-    print r.get(visitor_ip)
-    print r.get('total_coupons_generated')
 
 def makeCoupon(signature, offset):
     seed = randint(0,49999)
@@ -55,6 +51,7 @@ def index(count=1):
         fifteen_off_50_coupons.append(makeCoupon(6228,4))
         fifty_off_250_coupons.append(makeCoupon(6209,3))
 
+    total_coupons_generated = r.get('total_coupons_generated')
     return render_template('index.html', **locals())
 
 if __name__ == "__main__":
