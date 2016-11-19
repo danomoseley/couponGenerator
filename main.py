@@ -5,10 +5,22 @@ app = Flask(__name__)
 app.debug = True
 
 def makeCoupon(signature, offset):
-    seed = randint(0,9999)
-    digit = randint(0,4)
-    checksum = (offset - ((digit - 1) * 3) - (seed * 3) - int(seed/10) - int(seed/100) * 3 - int(seed/1000)) % 10
-    return "%05d%1d%04d%04d%01d" % (47000,digit,seed,signature,checksum)
+    seed = randint(0,49999)
+    seed_str = "%05d" % seed
+    seed_list = list(int(d) for d in seed_str)
+    seed_list.reverse()
+
+    checksum = offset
+    for i, digit in enumerate(seed_list):
+        if i > 3:
+            digit -= 1
+        if i % 2 == 0:
+            checksum -= (digit * 3)%10 #Why 3
+        else:
+            checksum -= digit%10
+
+    checksum = checksum % 10
+    return "%05d%05d%04d%01d" % (47000,seed,signature,checksum)
 
 @app.route('/')
 @app.route('/<int:count>')
@@ -26,4 +38,3 @@ def index(count=1):
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')
-
