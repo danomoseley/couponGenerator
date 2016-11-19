@@ -1,0 +1,20 @@
+<!doctype html>
+<head>
+   <title>Lowes Coupons</title>
+</head>
+<body style="text-align:center;">
+   <h2>$15 Off $50</h2>
+   {% for coupon in fifteen_off_50_coupons %}
+       <h1>{{coupon}}</h1>
+   {% endfor %}
+   <br/>
+   <h2>$50 Off $250</h2>
+   {% for coupon in fifty_off_250_coupons %}
+       <h1>{{coupon}}</h1>
+   {% endfor %}
+   <br/>
+   <h2>10% Off</h2>
+   {% for coupon in ten_percent_off_coupons %}
+       <h1>{{coupon}}</h1>
+   {% endfor %} 
+</body>
