@@ -7,21 +7,40 @@ app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
 
-def analytics():
+def getStats():
    keys = []
+   total_users = 0
+   generated_coupons = 0
    for key in r.keys():
-      keys.append((key,int(r.get(key))))
-   sorted_keys = sorted(keys, key=lambda tup: tup[1], reverse=True)
+      if (r.type(key) == 'string' and key != 'total_coupons_generated'):
+         val = r.get(key)
+         total_users += 1
+         keys.append((key,val))
+         generated_coupons += int(val)
+
+   sorted_keys = sorted(keys, key=lambda x: int(x[1]), reverse=True)
    for key in sorted_keys:
       print "%s - %s" % (key[0], key[1])
 
+   return {
+      'total_user_generated_coupons': generated_coupons,
+      'total_users': total_users,
+      'average_generated_coupons': round(float(generated_coupons)/float(total_users),1),
+      'total_bad_coupons': r.scard("bad_coupons"),
+      'total_used_coupons': r.scard("used_coupons")
+   }
+
 def trackUsage(coupon):
+   visitor_ip = request.remote_addr
+
+   if visitor_ip in ['74.69.161.126']:
+       return
+
    if not r.get('total_coupons_generated'):
       r.set('total_coupons_generated', 1)
    else:
       r.incr('total_coupons_generated')
 
-   visitor_ip = request.remote_addr
    if not r.get(visitor_ip):
       r.set(visitor_ip,1)
    else:
@@ -72,7 +91,7 @@ def index(count=1):
       fifteen_off_50_coupons.append(makeCoupon(1))
       fifty_off_250_coupons.append(makeCoupon(2))
 
-   total_coupons_generated = r.get('total_coupons_generated')
+   stats = getStats()
    return render_template('index.html', **locals())
 
 @app.route('/coupon/mark_bad', methods = ['POST'])

@@ -16,6 +16,7 @@
          .glyphicon{cursor:pointer; color:red;}
          .glyphicon-ok.activated{color:green;}
          body{font-size: 20pt;text-align:center;}
+         #stats{margin-top:100px;font-size:10pt}
       </style>
    </head>
    <body>
@@ -45,7 +46,13 @@
             <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
          </h1>
       {% endfor %}
-      <span style="color:white">{{total_coupons_generated}} total coupons generated</span>
+      <div id="stats">
+         Total users: {{stats['total_users']}}<br/>
+         Total generated coupons: {{stats['total_user_generated_coupons']}}<br/>
+         Average user generated coupons: {{stats['average_generated_coupons']}}<br/>
+         Total coupons marked bad: {{stats['total_bad_coupons']}}<br/>
+         Total coupons marked used: {{stats['total_used_coupons']}}<br/>
+      </div>
       <script>
          $(document).ready(function() {
             $(".mark_bad").on("click", function(){
