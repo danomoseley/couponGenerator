@@ -42,10 +42,10 @@ def makeCoupon(signature, offset):
 @app.route('/<int:count>')
 def index(count=1):
     visitor_ip = request.remote_addr
-    if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 1000:
+    if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
         abort(503)
 
-    if r.get(visitor_ip) and int(r.get(visitor_ip)) > 50:
+    if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
         abort(403)
 
     ten_percent_off_coupons = []
