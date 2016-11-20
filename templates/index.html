@@ -13,33 +13,53 @@
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
       <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
       <style>
-         h1 span {cursor:pointer;}
-         .glyphicon{cursor:pointer; color:red;}
+         .coupon-actions .glyphicon.glyphicon-remove-circle{color:red;}
+         .coupon-actions.active .glyphicon{cursor:pointer;}
          .glyphicon-ok.activated{color:green;}
          body{font-size: 20pt;text-align:center;}
          #stats{margin-top:100px;font-size:10pt}
+         .button {
+            cursor: pointer;
+            background-color: #4CAF50; /* Green */
+            border: none;
+            color: white;
+            padding: 10pt 25pt;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            -webkit-transition-duration: 0.4s;
+            transition-duration: 0.4s;
+         }
+         .button:hover { background-color: #4CAF50; color: white; }
+...
       </style>
    </head>
    <body>
       <h2>$15 Off $50</h2>
       <h1 data-couponType="1">
-         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
-         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
-         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
+         <span class="coupon-actions">
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         </span>
       </h1>
       <br/>
       <h2>$50 Off $250</h2>
       <h1 data-couponType="2">
-         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
-         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
-         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
+         <span class="coupon-actions">
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         </span>
       </h1>
       <br/>
       <h2>10% Off</h2>
       <h1 data-couponType="0">
-         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
-         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
-         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
+         <span class="coupon-actions">
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+         </span>
       </h1>
       <div id="stats">
          Total users: {{stats['total_users']}}<br/>
@@ -59,31 +79,32 @@
                   type: "GET",
                   url: "/coupon/generate/"+coupon_type,
                   success: function(data){
-                     coupon_span.html(data.coupon)
+                     coupon_span.html(data.coupon);
                      coupon_span.parent().data("coupon", data.coupon);
-                     coupon_span.parent().addClass("generated")
+                     coupon_span.removeClass("button");
+                     coupon_span.parent().find("span.coupon-actions").addClass("active");
                   },
                   dataType: "json"
                })
             });
-            $(document).on("click", ".generated .mark_bad", function(){
+            $(document).on("click", ".coupon-actions.active .mark_bad", function(){
                button = this;
-               coupon_type = $(this).parent().data("coupontype");
-               coupon = $(this).parent().data("coupon");
+               coupon_type = $(this).parent().parent().data("coupontype");
+               coupon = $(this).parent().parent().data("coupon");
                ga('send', 'event', 'coupon', 'mark bad', coupon_type);
                $.ajax({
                   type: "POST",
                   url: "/coupon/mark_bad",
                   data: { coupon: coupon, coupon_type: coupon_type },
                   success: function(data){
-                     $(button).parent().find("span.coupon").html(data.new_coupon);
+                     $(button).parent().parent().find("span.coupon").html(data.new_coupon);
                   },
                   dataType: "json"
                });
             });
-            $(document).on("click", ".generated .mark_used", function(){
+            $(document).on("click", ".coupon-actions.active .mark_used", function(){
                button = $(this);
-               coupon = $(this).parent().data("coupon");
+               coupon = $(this).parent().parent().data("coupon");
                ga('send', 'event', 'coupon', 'mark used', coupon);
                $.ajax({
                   type: "POST",
@@ -91,6 +112,7 @@
                   data: { coupon: coupon },
                   success: function(data){
                      button.addClass("activated");
+                     button.parent().removeClass("active");
                   },
                   dataType: "json"
                });
