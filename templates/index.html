@@ -13,6 +13,7 @@
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
       <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
       <style>
+         h1 span {cursor:pointer;}
          .glyphicon{cursor:pointer; color:red;}
          .glyphicon-ok.activated{color:green;}
          body{font-size: 20pt;text-align:center;}
@@ -21,31 +22,25 @@
    </head>
    <body>
       <h2>$15 Off $50</h2>
-      {% for coupon in fifteen_off_50_coupons %}
-         <h1>
-            <span class="coupon">{{coupon}}</span>
-            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="1"></span>
-            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
-         </h1>
-      {% endfor %}
+      <h1 data-couponType="1">
+         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
+         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+      </h1>
       <br/>
       <h2>$50 Off $250</h2>
-      {% for coupon in fifty_off_250_coupons %}
-         <h1>
-            <span class="coupon">{{coupon}}</span>
-            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="2"></span>
-            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
-         </h1>
-      {% endfor %}
+      <h1 data-couponType="2">
+         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
+         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+      </h1>
       <br/>
       <h2>10% Off</h2>
-      {% for coupon in ten_percent_off_coupons %}
-         <h1>
-            <span class="coupon">{{coupon}}</span>
-            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="0"></span>
-            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
-         </h1>
-      {% endfor %}
+      <h1 data-couponType="0">
+         <span title="Generate Coupon Code" class="coupon generate">Generate</span>
+         <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
+         <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
+      </h1>
       <div id="stats">
          Total users: {{stats['total_users']}}<br/>
          Total generated coupons: {{stats['total_user_generated_coupons']}}<br/>
@@ -55,10 +50,25 @@
       </div>
       <script>
          $(document).ready(function() {
-            $(".mark_bad").on("click", function(){
+            $(".generate").on("click", function(){
+               coupon_type = $(this).parent().data("coupontype");
+               coupon_span = $(this);
+               ga('send', 'event', 'coupon', 'generate', coupon_type);
+               $.ajax({
+                  type: "GET",
+                  url: "/coupon/generate/"+coupon_type,
+                  success: function(data){
+                     coupon_span.html(data.coupon)
+                     coupon_span.parent().data("coupon", data.coupon);
+                     coupon_span.parent().addClass("generated")
+                  },
+                  dataType: "json"
+               })
+            });
+            $(document).on("click", ".generated .mark_bad", function(){
                button = this;
-               coupon_type = $(this).data("coupontype");
-               coupon = $(this).data("coupon");
+               coupon_type = $(this).parent().data("coupontype");
+               coupon = $(this).parent().data("coupon");
                ga('send', 'event', 'coupon', 'mark bad', coupon_type);
                $.ajax({
                   type: "POST",
@@ -70,9 +80,9 @@
                   dataType: "json"
                });
             });
-            $(".mark_used").on("click", function(){
+            $(document).on("click", ".generated .mark_used", function(){
                button = $(this);
-               coupon = $(this).data("coupon");
+               coupon = $(this).parent().data("coupon");
                ga('send', 'event', 'coupon', 'mark used', coupon);
                $.ajax({
                   type: "POST",

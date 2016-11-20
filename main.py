@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,abort
+from flask import Flask,render_template,request,abort,jsonify
 from random import randint
 import redis
 import json
@@ -46,7 +46,19 @@ def trackUsage(coupon):
    else:
       r.incr(visitor_ip)
 
+@app.route('/coupon/generate/<int:coupon_type>')
+def generateCoupon(coupon_type):
+   coupon = makeCoupon(coupon_type)
+   if coupon is not None:
+      return jsonify({'success': True, 'coupon': coupon})
+   else:
+      return jsonify({'success': False})
+
 def makeCoupon(coupon_type):
+   visitor_ip = request.remote_addr
+   if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
+      abort(403)
+
    coupon_types = [(6035,8),(6228,4),(6209,3)]
    signature = coupon_types[coupon_type][0]
    offset = coupon_types[coupon_type][1]
@@ -76,20 +88,10 @@ def makeCoupon(coupon_type):
 @app.route('/<int:count>')
 def index(count=1):
    visitor_ip = request.remote_addr
-   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
-      abort(503)
-
    if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
       abort(403)
-
-   ten_percent_off_coupons = []
-   fifteen_off_50_coupons = []
-   fifty_off_250_coupons = []
-
-   for _ in range(count):
-      ten_percent_off_coupons.append(makeCoupon(0))
-      fifteen_off_50_coupons.append(makeCoupon(1))
-      fifty_off_250_coupons.append(makeCoupon(2))
+   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
+      abort(503)
 
    stats = getStats()
    return render_template('index.html', **locals())
