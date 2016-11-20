@@ -6,6 +6,14 @@ app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
 
+def analytics():
+    keys = []
+    for key in r.keys():
+        keys.append((key,int(r.get(key))))
+    sorted_keys = sorted(keys, key=lambda tup: tup[1], reverse=True)
+    for key in sorted_keys:
+        print "%s - %s" % (key[0], key[1])
+
 def trackUsage(coupon):
     if not r.get('total_coupons_generated'):
         r.set('total_coupons_generated', 1)
