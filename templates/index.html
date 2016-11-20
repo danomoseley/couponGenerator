@@ -38,7 +38,7 @@
       <h2>$15 Off $50</h2>
       <h1 data-couponType="1">
          <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
-         <span class="coupon-actions">
+         <span class="coupon-actions" hidden>
             <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
             <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
          </span>
@@ -47,7 +47,7 @@
       <h2>$50 Off $250</h2>
       <h1 data-couponType="2">
          <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
-         <span class="coupon-actions">
+         <span class="coupon-actions" hidden>
             <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
             <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
          </span>
@@ -56,7 +56,7 @@
       <h2>10% Off</h2>
       <h1 data-couponType="0">
          <span title="Generate Coupon Code" class="coupon generate button">Generate</span>
-         <span class="coupon-actions">
+         <span class="coupon-actions" hidden>
             <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle"></span>
             <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok"></span>
          </span>
@@ -79,10 +79,10 @@
                   type: "GET",
                   url: "/coupon/generate/"+coupon_type,
                   success: function(data){
+                     coupon_span.parent().find("span.coupon-actions").addClass("active").show();
                      coupon_span.html(data.coupon);
                      coupon_span.parent().data("coupon", data.coupon);
                      coupon_span.removeClass("button");
-                     coupon_span.parent().find("span.coupon-actions").addClass("active");
                   },
                   dataType: "json"
                })
