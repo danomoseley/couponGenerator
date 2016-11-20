@@ -1,31 +1,80 @@
 <!doctype html>
-<head>
-   <title>Coupons</title>
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-      ga('create', 'UA-15878927-9', 'auto');
-      ga('send', 'pageview');
-
-    </script>
-</head>
-<body style="text-align:center;">
-   <h2>$15 Off $50</h2>
-   {% for coupon in fifteen_off_50_coupons %}
-       <h1>{{coupon}}</h1>
-   {% endfor %}
-   <br/>
-   <h2>$50 Off $250</h2>
-   {% for coupon in fifty_off_250_coupons %}
-       <h1>{{coupon}}</h1>
-   {% endfor %}
-   <br/>
-   <h2>10% Off</h2>
-   {% for coupon in ten_percent_off_coupons %}
-       <h1>{{coupon}}</h1>
-   {% endfor %}
-   <span style="color:white">{{total_coupons_generated}} total coupons generated</span>
-</body>
+<html>
+   <head>
+      <title>Coupons</title>
+      <script>
+         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+         })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+         ga('create', 'UA-15878927-9', 'auto');
+         ga('send', 'pageview');
+      </script>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+      <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+      <style>
+         .glyphicon{cursor:pointer; color:red;}
+         .glyphicon-ok.activated{color:green;}
+      </style>
+   </head>
+   <body style="text-align:center;">
+      <h2>$15 Off $50</h2>
+      {% for coupon in fifteen_off_50_coupons %}
+         <h1>
+            <span class="coupon">{{coupon}}</span>
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="1"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
+         </h1>
+      {% endfor %}
+      <br/>
+      <h2>$50 Off $250</h2>
+      {% for coupon in fifty_off_250_coupons %}
+         <h1>
+            <span class="coupon">{{coupon}}</span>
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="2"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
+         </h1>
+      {% endfor %}
+      <br/>
+      <h2>10% Off</h2>
+      {% for coupon in ten_percent_off_coupons %}
+         <h1>
+            <span class="coupon">{{coupon}}</span>
+            <span title="Mark Coupon Bad" class="mark_bad glyphicon glyphicon-remove-circle" data-coupon="{{coupon}}" data-couponType="0"></span>
+            <span title="Mark Coupon Used" class="mark_used glyphicon glyphicon-ok" data-coupon="{{coupon}}"></span>
+         </h1>
+      {% endfor %}
+      <span style="color:white">{{total_coupons_generated}} total coupons generated</span>
+      <script>
+         $(document).ready(function() {
+            $(".mark_bad").on("click", function(){
+               button = this;
+               coupon_type = $(this).data("coupontype");
+               coupon = $(this).data("coupon");
+               $.ajax({
+                  type: "POST",
+                  url: "/coupon/mark_bad",
+                  data: { coupon: coupon, coupon_type: coupon_type },
+                  success: function(data){
+                     $(button).parent().find("span.coupon").html(data.new_coupon);
+                  },
+                  dataType: "json"
+               });
+            });
+            $(".mark_used").on("click", function(){
+               button = $(this);
+               coupon = $(this).data("coupon");
+               $.ajax({
+                  type: "POST",
+                  url: "/coupon/mark_used",
+                  data: { coupon: coupon },
+                  success: function(data){
+                     button.addClass("activated");
+                  },
+                  dataType: "json"
+               });
+            });
+         });
+      </script>
+   </body>
+</html>
