@@ -50,9 +50,10 @@
       </div>
       <script>
          $(document).ready(function() {
-            $(".generate").on("click", function(){
+            $(document).on("click", ".generate", function(){
                coupon_type = $(this).parent().data("coupontype");
                coupon_span = $(this);
+               $(this).removeClass("generate");
                ga('send', 'event', 'coupon', 'generate', coupon_type);
                $.ajax({
                   type: "GET",
