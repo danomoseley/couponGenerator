@@ -52,6 +52,7 @@
                button = this;
                coupon_type = $(this).data("coupontype");
                coupon = $(this).data("coupon");
+               ga('send', 'event', 'coupon', 'mark bad', coupon_type);
                $.ajax({
                   type: "POST",
                   url: "/coupon/mark_bad",
@@ -65,6 +66,7 @@
             $(".mark_used").on("click", function(){
                button = $(this);
                coupon = $(this).data("coupon");
+               ga('send', 'event', 'coupon', 'mark used', coupon);
                $.ajax({
                   type: "POST",
                   url: "/coupon/mark_used",
