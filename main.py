@@ -19,8 +19,6 @@ def getStats():
          generated_coupons += int(val)
 
    sorted_keys = sorted(keys, key=lambda x: int(x[1]), reverse=True)
-   for key in sorted_keys:
-      print "%s - %s" % (key[0], key[1])
 
    return {
       'total_user_generated_coupons': generated_coupons,
