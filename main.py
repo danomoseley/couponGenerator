@@ -2,10 +2,17 @@ from flask import Flask,render_template,request,abort,jsonify
 from random import randint
 import redis
 import json
+import sys
 
 app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
+
+def getUserIP():
+   if 'X-Forwarded-For' in request.headers:
+       return request.headers['X-Forwarded-For']
+   else:
+       return request.remote_addr
 
 def getStats():
    keys = []
@@ -29,7 +36,7 @@ def getStats():
    }
 
 def trackUsage(coupon):
-   visitor_ip = request.remote_addr
+   visitor_ip = getUserIP()
 
    if visitor_ip in ['74.69.161.126']:
        return
@@ -53,7 +60,7 @@ def generateCoupon(coupon_type):
       return jsonify({'success': False})
 
 def makeCoupon(coupon_type):
-   visitor_ip = request.remote_addr
+   visitor_ip = getUserIP()
    if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
       abort(403)
 
@@ -85,7 +92,7 @@ def makeCoupon(coupon_type):
 @app.route('/') 
 @app.route('/<int:count>')
 def index(count=1):
-   visitor_ip = request.remote_addr
+   visitor_ip = getUserIP()
    if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
       abort(403)
    if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
