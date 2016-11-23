@@ -1,0 +1,4 @@
+[invites]
+invite_expiration_seconds = 43200
+user_expiration_seconds = 2592000
+key = change-me-to-a-uuid

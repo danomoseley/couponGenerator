@@ -4,12 +4,13 @@ import json
 import sys
 import string
 import random
+from ConfigParser import SafeConfigParser
 
 app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
-invite_expiration_seconds = 60*60*12
-user_expiration_seconds = 60*60*24+30
+config = SafeConfigParser()
+config.read('config.ini')
 
 def getUserIP():
    if 'X-Forwarded-For' in request.headers:
@@ -83,7 +84,7 @@ def index(inviteCode=None):
          visitor_ip = getUserIP()
          r.set('user:%s' % visitor_ip, 0)
          r.expire('user:%s' % visitor_ip, user_expiration_seconds)
-         r.delete('invite:%s' %inviteCode)
+         r.delete('invite:%s' % inviteCode)
          r.incr('total_users')
       else:
          return redirect('/')
@@ -108,12 +109,15 @@ def markCouponUsed():
    r.sadd('used_coupons', coupon)
    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
-@app.route('/invite/generate')
-def generateInvite():
-   inviteCode = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(5))
-   r.set('invite:%s' % inviteCode, 1)
-   r.expire('invite:%s' % inviteCode, invite_expiration_seconds)
-   return json.dumps({'success':True, 'invite_code': inviteCode}), 200, {'ContentType':'application/json'}
+@app.route('/invite/generate/<key>')
+def generateInvite(key):
+   if key != config.get('invites', 'key'):
+      abort(403)
+   invite_code = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(5))
+   r.set('invite:%s' % invite_code, 1)
+   r.expire('invite:%s' % invite_code, config.get('invites','invite_expiration_seconds'))
+   invite_url = request.url_root + invite_code
+   return json.dumps({'success':True, 'url': invite_url}), 200, {'ContentType':'application/json'}
 
 if __name__ == "__main__":
    app.run(host='0.0.0.0')
