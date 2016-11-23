@@ -4,6 +4,7 @@ import json
 import sys
 import string
 import random
+import os
 from ConfigParser import SafeConfigParser
 
 app = Flask(__name__)
@@ -120,7 +121,7 @@ def generateInvite(key):
    r.set('invite:%s' % invite_code, 1)
    r.expire('invite:%s' % invite_code, config.get('invites','invite_expiration_seconds'))
    invite_url = request.url_root + invite_code
-   return json.dumps({'success':True, 'url': invite_url}), 200, {'ContentType':'application/json'}
+   return render_template('invite.html', **locals())
 
 if __name__ == "__main__":
    app.run(host='0.0.0.0')
