@@ -2,3 +2,7 @@
 invite_expiration_seconds = 43200
 user_expiration_seconds = 2592000
 key = change-me-to-a-uuid
+
+[limits]
+total_coupons = 10000
+coupons_per_user = 20

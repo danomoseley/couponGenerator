@@ -25,9 +25,9 @@ def getUserIP():
 def authUser():
    visitor_ip = getUserIP()
    user_key = 'user:%s' % visitor_ip
-   if not r.get(user_key) or int(r.get(user_key)) > 10:
+   if not r.get(user_key) or int(r.get(user_key)) > config.get('limits','coupons_per_user'):
       abort(403)
-   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
+   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > config.get('limits','total_coupons'):
       abort(503)
    r.expire(user_key, config.get('invites','user_expiration_seconds'))
    return user_key
