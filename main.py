@@ -1,12 +1,15 @@
-from flask import Flask,render_template,request,abort,jsonify
-from random import randint
+from flask import Flask,render_template,request,abort,jsonify,redirect
 import redis
 import json
 import sys
+import string
+import random
 
 app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
+invite_expiration_seconds = 60*60*12
+user_expiration_seconds = 60*60*24+30
 
 def getUserIP():
    if 'X-Forwarded-For' in request.headers:
@@ -14,45 +17,30 @@ def getUserIP():
    else:
        return request.remote_addr
 
+def authUser():
+   visitor_ip = getUserIP()
+   user_key = 'user:%s' % visitor_ip
+   if not r.get(user_key) or int(r.get(user_key)) > 10:
+      abort(403)
+   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
+      abort(503)
+   r.expire(user_key, user_expiration_seconds)
+   return user_key
+
 def getStats():
-   keys = []
-   total_users = 0
-   generated_coupons = 0
-   for key in r.keys():
-      if (r.type(key) == 'string' and key != 'total_coupons_generated'):
-         val = r.get(key)
-         total_users += 1
-         keys.append((key,val))
-         generated_coupons += int(val)
-
-   sorted_keys = sorted(keys, key=lambda x: int(x[1]), reverse=True)
-
+   generated_coupons = r.get('total_coupons_generated') or 0
+   total_users = r.get('total_users') or 0
    return {
-      'total_user_generated_coupons': generated_coupons,
+      'total_generated_coupons': generated_coupons,
       'total_users': total_users,
       'average_generated_coupons': round(float(generated_coupons)/float(total_users),1),
       'total_bad_coupons': r.scard("bad_coupons"),
       'total_used_coupons': r.scard("used_coupons")
    }
 
-def trackUsage(coupon):
-   visitor_ip = getUserIP()
-
-   if visitor_ip in ['74.69.161.126']:
-       return
-
-   if not r.get('total_coupons_generated'):
-      r.set('total_coupons_generated', 1)
-   else:
-      r.incr('total_coupons_generated')
-
-   if not r.get(visitor_ip):
-      r.set(visitor_ip,1)
-   else:
-      r.incr(visitor_ip)
-
 @app.route('/coupon/generate/<int:coupon_type>')
 def generateCoupon(coupon_type):
+   authUser()
    coupon = makeCoupon(coupon_type)
    if coupon is not None:
       return jsonify({'success': True, 'coupon': coupon})
@@ -60,16 +48,13 @@ def generateCoupon(coupon_type):
       return jsonify({'success': False})
 
 def makeCoupon(coupon_type):
-   visitor_ip = getUserIP()
-   if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
-      abort(403)
-
+   user_key = authUser()
    coupon_types = [(6035,8),(6228,4),(6209,3)]
    signature = coupon_types[coupon_type][0]
    offset = coupon_types[coupon_type][1]
 
    for _ in range(10):
-      seed = randint(0,49999)
+      seed = random.randint(0,49999)
       seed_str = "%05d" % seed
       seed_list = list(int(d) for d in seed_str)
       seed_list.reverse()
@@ -86,33 +71,49 @@ def makeCoupon(coupon_type):
       checksum = checksum % 10
       coupon = "%05d%05d%04d%01d" % (47000,seed,signature,checksum)
       if not (r.sismember('bad_coupons', coupon) or r.sismember('used_coupons', coupon)):
-         trackUsage(coupon)
+         r.incr(user_key)
+         r.incr('total_coupons_generated')
          return coupon
 
 @app.route('/') 
-@app.route('/<int:count>')
-def index(count=1):
-   visitor_ip = getUserIP()
-   if r.get(visitor_ip) and int(r.get(visitor_ip)) >= 30:
-      abort(403)
-   if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
-      abort(503)
+@app.route('/<inviteCode>')
+def index(inviteCode=None):
+   if inviteCode is not None:
+      if r.get('invite:%s' % inviteCode):
+         visitor_ip = getUserIP()
+         r.set('user:%s' % visitor_ip, 0)
+         r.expire('user:%s' % visitor_ip, user_expiration_seconds)
+         r.delete('invite:%s' %inviteCode)
+         r.incr('total_users')
+      else:
+         return redirect('/')
+   else:
+      authUser()
 
    stats = getStats()
    return render_template('index.html', **locals())
 
 @app.route('/coupon/mark_bad', methods = ['POST'])
-def mark_coupon_bad():
+def markCouponBad():
+   authUser()
    coupon = request.form['coupon']
    coupon_type = int(request.form['coupon_type'])
    r.sadd('bad_coupons', coupon)
    return json.dumps({'success':True, 'new_coupon':makeCoupon(coupon_type)}), 200, {'ContentType':'application/json'}
 
 @app.route('/coupon/mark_used', methods = ['POST'])
-def mark_coupon_used():
+def markCouponUsed():
+   authUser()
    coupon = request.form['coupon']
    r.sadd('used_coupons', coupon)
    return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
+
+@app.route('/invite/generate')
+def generateInvite():
+   inviteCode = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(5))
+   r.set('invite:%s' % inviteCode, 1)
+   r.expire('invite:%s' % inviteCode, invite_expiration_seconds)
+   return json.dumps({'success':True, 'invite_code': inviteCode}), 200, {'ContentType':'application/json'}
 
 if __name__ == "__main__":
    app.run(host='0.0.0.0')
