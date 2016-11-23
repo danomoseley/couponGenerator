@@ -9,8 +9,11 @@ from ConfigParser import SafeConfigParser
 app = Flask(__name__)
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 app.debug = True
+
+DIR = os.path.dirname(os.path.realpath(__file__))
 config = SafeConfigParser()
-config.read('config.ini')
+config.read(os.path.join(DIR,'config.ini'))
+
 
 def getUserIP():
    if 'X-Forwarded-For' in request.headers:
@@ -25,7 +28,7 @@ def authUser():
       abort(403)
    if r.get('total_coupons_generated') and int(r.get('total_coupons_generated')) > 10000:
       abort(503)
-   r.expire(user_key, user_expiration_seconds)
+   r.expire(user_key, config.get('invites','user_expiration_seconds'))
    return user_key
 
 def getStats():
@@ -83,7 +86,7 @@ def index(inviteCode=None):
       if r.get('invite:%s' % inviteCode):
          visitor_ip = getUserIP()
          r.set('user:%s' % visitor_ip, 0)
-         r.expire('user:%s' % visitor_ip, user_expiration_seconds)
+         r.expire('user:%s' % visitor_ip, config.get('invites','user_expiration_seconds'))
          r.delete('invite:%s' % inviteCode)
          r.incr('total_users')
       else:
