@@ -30,7 +30,7 @@ def authUser():
 
 def getStats():
    generated_coupons = r.get('total_coupons_generated') or 0
-   total_users = r.get('total_users') or 0
+   total_users = r.get('total_users') or 1
    return {
       'total_generated_coupons': generated_coupons,
       'total_users': total_users,
